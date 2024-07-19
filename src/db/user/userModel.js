@@ -4,7 +4,7 @@ import userSchema from "./userSchema.js";
 export const insertUser = (obj) => userSchema(obj).save();
 
 // get user by filter
-export const getUser = (filter) => userSchema.findOne({ filter });
+export const getUser = (filter) => userSchema.findOne(filter);
 
 // edit user
 export const editUser = (email, obj) =>

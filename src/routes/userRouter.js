@@ -1,12 +1,13 @@
 import express from "express";
 import { v4 as uuid4 } from "uuid";
-import { editUser, insertUser } from "../db/user/userModel.js";
-import { emailVerification } from "../services/nodemailer.js";
+import { editUser, getUser, insertUser } from "../db/user/userModel.js";
+import { emailVerification, sendOTP } from "../services/nodemailer.js";
 import {
   deleteSession,
   getSession,
   insertSession,
 } from "../db/session/sessionModel.js";
+import { otpGenerator } from "../util/otpGenerator.js";
 
 const router = express.Router();
 
@@ -50,6 +51,7 @@ router.post("/verify-account", async (req, res) => {
     const { c, e } = req.body;
 
     const session = await getSession({ token: c, associate: e });
+
     if (session?._id) {
       const user = await editUser(session.associate, { status: "active" });
 
@@ -59,6 +61,11 @@ router.post("/verify-account", async (req, res) => {
         message: "Account Verified, Login Now..",
       });
     }
+
+    res.json({
+      status: "error",
+      message: "Invalid Token",
+    });
   } catch (error) {
     res.json({
       status: "error",
@@ -67,4 +74,30 @@ router.post("/verify-account", async (req, res) => {
   }
 });
 
+// request otp
+router.post("/otp-request", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await getUser({ email });
+
+    if (user?._id) {
+      // send otp to user mail
+      sendOTP({ email, otp: otpGenerator() });
+      return res.json({
+        status: "success",
+        message:
+          "If email exist in system you will receive OTP to reset passsword",
+      });
+    }
+    res.json({
+      status: "error",
+      message: "Your Email is not registered",
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: error,
+    });
+  }
+});
 export default router;
